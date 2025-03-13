@@ -1,11 +1,11 @@
 package Msgs;
 
-public class MessageDetails {
+public class Details {
 
     private Msg message;
     private String fromPeerID;
 
-    public MessageDetails() {
+    public Details() {
         message = new Msg();
         fromPeerID = null;
     }

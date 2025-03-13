@@ -2,7 +2,7 @@ package Msgs;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import static Logging.Helper.logMessage;
+import static Logging.Helper.writeLog;
 
 public class Msg {
     private String type;
@@ -19,7 +19,7 @@ public class Msg {
             this.typeBytes = messageType.trim().getBytes(StandardCharsets.UTF_8);
             this.payload = null;
         } else {
-            logMessage("Invalid message type.");
+            writeLog("Invalid message type.");
         }
     }
 

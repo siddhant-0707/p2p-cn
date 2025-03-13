@@ -4,19 +4,19 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-public class HandShakeMsg {
+public class Handshake {
     private byte[] headerBytes;
     private byte[] peerIDBytes;
     private byte[] zeroBits;
     private String header;
     private String peerID;
 
-    public HandShakeMsg() {
+    public Handshake() {
         this.zeroBits = new byte[Constants.HANDSHAKE_ZEROBITS_LENGTH];
         Arrays.fill(this.zeroBits, (byte) 0);
     }
 
-    public HandShakeMsg(String header, String peerID) {
+    public Handshake(String header, String peerID) {
         this();
         this.header = header;
         this.headerBytes = header.getBytes(StandardCharsets.UTF_8);
@@ -42,8 +42,8 @@ public class HandShakeMsg {
         return handshakeBytes;
     }
 
-    public static HandShakeMsg deserialize(byte[] handshakeBytes) {
-        HandShakeMsg message = new HandShakeMsg();
+    public static Handshake deserialize(byte[] handshakeBytes) {
+        Handshake message = new Handshake();
         byte[] header = Arrays.copyOfRange(handshakeBytes, 0, Constants.HANDSHAKE_HEADER_LENGTH);
         byte[] peerId = Arrays.copyOfRange(handshakeBytes, Constants.HANDSHAKE_HEADER_LENGTH + Constants.HANDSHAKE_ZEROBITS_LENGTH, Constants.HANDSHAKE_MESSAGE_LENGTH);
         message.setHeaderFromBytes(header);

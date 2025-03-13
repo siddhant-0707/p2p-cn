@@ -7,11 +7,11 @@ import java.util.logging.Logger;
 /**
  * Utility class for managing logging operations.
  */
-public class LogHelper {
+public class Helper {
 
     private FileHandler logFileHandler;
 
-    private static final Logger logger = Logger.getLogger(LogHelper.class.getName());
+    private static final Logger logger = Logger.getLogger(Helper.class.getName());
 
     /**
      * Initializes the logger by creating a log file and configuring its handler.

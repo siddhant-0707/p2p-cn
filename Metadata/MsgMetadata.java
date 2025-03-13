@@ -2,11 +2,11 @@ package Metadata;
 
 import Msgs.Msg;
 
-public class MessageMetadata {
+public class MsgMetadata {
     private Msg message;
     private String senderId;
 
-    public MessageMetadata() {
+    public MsgMetadata() {
         this.message = new Msg();
         this.senderId = "";
     }
