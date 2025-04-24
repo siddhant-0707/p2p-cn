@@ -6,22 +6,23 @@ import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 
 public class LogFormatter extends Formatter {
-
-    // Format for date and time in log messages
-    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    // Timestamp format: YYYY-MM-DD HH:mm:ss
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER = 
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     public String format(LogRecord record) {
-        return getFormattedMessage(record.getMessage());
+        return formatMessage(record.getMessage());
     }
 
     /**
-     * Generates a formatted log message with timestamp.
+     * Applies timestamp and peer label to a log message.
      *
-     * @param message message to format
-     * @return formatted log entry
+     * @param message Raw log text
+     * @return Formatted log entry
      */
-    public static String getFormattedMessage(String message) {
-        return dateTimeFormatter.format(LocalDateTime.now()) + " - Peer: " + message + "\n";
+    public static String formatMessage(String message) {
+        String timestamp = TIMESTAMP_FORMATTER.format(LocalDateTime.now());
+        return String.format("%s - Peer %s: %s%n", timestamp, System.getProperty("peer.id"), message);
     }
 }

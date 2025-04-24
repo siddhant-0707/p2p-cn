@@ -52,12 +52,13 @@ public class FilePiece {
         byte[] indexBytes = new byte[Constants.PIECE_INDEX_LENGTH];
         System.arraycopy(payload, 0, indexBytes, 0, Constants.PIECE_INDEX_LENGTH);
 
-        FilePiece filePiece = new FilePiece();
-        filePiece.setPieceIndex(ByteBuffer.wrap(indexBytes).getInt());
-        byte[] content = new byte[payload.length - Constants.PIECE_INDEX_LENGTH];
-        System.arraycopy(payload, Constants.PIECE_INDEX_LENGTH, content, 0, content.length);
-        filePiece.setContent(content);
+        FilePiece piece = new FilePiece();
+        piece.setPieceIndex(ByteBuffer.wrap(indexBytes).getInt());
 
-        return filePiece;
+        byte[] data = new byte[payload.length - Constants.PIECE_INDEX_LENGTH];
+        System.arraycopy(payload, Constants.PIECE_INDEX_LENGTH, data, 0, data.length);
+        piece.setContent(data);
+        
+        return piece;
     }
 }

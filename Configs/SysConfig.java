@@ -20,4 +20,6 @@ public class SysConfig {
     // Size of each piece of the shared file (in bytes)
     public static int pieceSize;
 
+    public static final String peerInfoFile = System.getProperty("user.dir") + "/Configs/PeerInfo.cfg";
+    public static final String systemConfigurationFile = System.getProperty("user.dir") + "/Configs/Common.cfg";
 }

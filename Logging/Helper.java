@@ -36,6 +36,6 @@ public class Helper {
      */
     public static void writeLog(String logMessage) {
         logger.info(logMessage);
-        System.out.println(LogFormatter.getFormattedMessage(logMessage));
+        System.out.println(LogFormatter.formatMessage(logMessage));
     }
 }

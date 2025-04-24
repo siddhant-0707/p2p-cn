@@ -4,17 +4,17 @@ import Metadata.MsgMetadata;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class MsgQueue {
-    private static final ConcurrentLinkedQueue<MsgMetadata> messageQueue = new ConcurrentLinkedQueue<>();
+    private static final ConcurrentLinkedQueue<MsgMetadata> queue = new ConcurrentLinkedQueue<>();
 
-    public static synchronized void addMessage(MsgMetadata messageDetails) {
-        messageQueue.offer(messageDetails);
+    public static void addMessageToMessageQueue(MsgMetadata message) {
+        queue.offer(message);
     }
 
-    public static synchronized MsgMetadata retrieveMessage() {
-        return messageQueue.poll();
+    public static MsgMetadata getMessageFromQueue() {
+        return queue.poll();
     }
 
-    public static synchronized boolean isEmpty() {
-        return messageQueue.isEmpty();
+    public static boolean hasNext() {
+        return !queue.isEmpty();
     }
 }

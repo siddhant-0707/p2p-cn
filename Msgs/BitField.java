@@ -3,104 +3,100 @@ package Msgs;
 import Configs.SysConfig;
 import Logging.Helper;
 import Process.Peer;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 
 public class BitField {
-    private FilePiece[] filePieces;
-    private int totalPieces;
+    private final FilePiece[] filePieces;
+    private final int totalPieces;
 
     public BitField() {
-        int fileSize = SysConfig.fileSize;
+        int fileSize  = SysConfig.fileSize;
         int pieceSize = SysConfig.pieceSize;
         this.totalPieces = (int) Math.ceil((double) fileSize / pieceSize);
-        this.filePieces = new FilePiece[this.totalPieces];
-        Arrays.setAll(filePieces, index -> new FilePiece());
+        this.filePieces  = new FilePiece[this.totalPieces];
+        Arrays.setAll(this.filePieces, i -> new FilePiece());
     }
 
     public void initializePieces(String peerId, boolean hasFile) {
-        for (FilePiece filePiece : filePieces) {
-            filePiece.setPieceAvailable(hasFile);
-            filePiece.setFromPeer(peerId);
+        for (FilePiece piece : filePieces) {
+            piece.setPieceAvailable(hasFile);
+            piece.setFromPeer(peerId);
         }
     }
 
     public byte[] encodeBitField() {
-        int numBytes = (int) Math.ceil((double) totalPieces / 8);
-        byte[] encodedBitField = new byte[numBytes];
-        
+        int numBytes = (totalPieces + 7) / 8;
+        byte[] bits = new byte[numBytes];
+
         for (int i = 0; i < totalPieces; i++) {
             if (filePieces[i].isPieceAvailable()) {
-                encodedBitField[i / 8] |= (1 << (7 - (i % 8)));
+                bits[i / 8] |= (1 << (7 - (i % 8)));
             }
         }
-        return encodedBitField;
+        return bits;
     }
 
-    public static BitField decodeBitField(byte[] encodedBitField) {
-        BitField bitField = new BitField();
-        
-        for (int i = 0; i < encodedBitField.length * 8; i++) {
-            if (i < bitField.getTotalPieces()) {
-                bitField.getFilePieces()[i].setPieceAvailable((encodedBitField[i / 8] & (1 << (7 - (i % 8)))) != 0);
-            }
+
+    public static BitField decodeBitField(byte[] data) {
+        BitField bf = new BitField();
+        for (int i = 0; i < bf.totalPieces; i++) {
+            boolean available = (data[i / 8] & (1 << (7 - (i % 8)))) != 0;
+            bf.filePieces[i].setPieceAvailable(available);
         }
-        return bitField;
+        return bf;
     }
 
     public int countAvailablePieces() {
         int count = 0;
-        for (FilePiece filePiece : filePieces) {
-            if (filePiece.isPieceAvailable()) {
-                count++;
-            }
+        for (FilePiece piece : filePieces) {
+            if (piece.isPieceAvailable()) count++;
         }
         return count;
     }
 
     public boolean isDownloadComplete() {
-        for (FilePiece filePiece : filePieces) {
-            if (!filePiece.isPieceAvailable()) {
-                return false;
-            }
+        for (FilePiece piece : filePieces) {
+            if (!piece.isPieceAvailable()) return false;
         }
         return true;
     }
 
-    public int findFirstMissingPiece(BitField otherBitField) {
+    /**
+     * Find the first piece this peer is missing that the other BitField has.
+     * @return piece index or –1 if none
+     */
+    public int findFirstMissingPiece(BitField other) {
         for (int i = 0; i < totalPieces; i++) {
-            if (!filePieces[i].isPieceAvailable() && otherBitField.getFilePieces()[i].isPieceAvailable()) {
+            if (!filePieces[i].isPieceAvailable() && other.filePieces[i].isPieceAvailable()) {
                 return i;
             }
         }
         return -1;
     }
 
-    public void updateBitField(String peerID, FilePiece receivedPiece) {
-        int index = receivedPiece.getPieceIndex();
-        
-        if (!filePieces[index].isPieceAvailable()) {
-            try {
-                String fileName = SysConfig.fileName;
-                File file = new File(Peer.peerID, fileName);
-                RandomAccessFile raf = new RandomAccessFile(file, "rw");
-                raf.seek(index * SysConfig.pieceSize);
-                raf.write(receivedPiece.getContent());
-                raf.close();
-                
-                filePieces[index].setPieceAvailable(true);
-                filePieces[index].setFromPeer(peerID);
-                Helper.writeLog(Peer.peerID + " received piece " + index + " from Peer " + peerID);
-                
+    public void updateBitField(String peerId, FilePiece received) {
+        int idx = received.getPieceIndex();
+        if (!filePieces[idx].isPieceAvailable()) {
+            File dir  = new File(Peer.peerID);
+            File file = new File(dir, SysConfig.fileName);
+            try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
+                raf.seek((long) idx * SysConfig.pieceSize);
+                raf.write(received.getContent());
+
+                filePieces[idx].setPieceAvailable(true);
+                filePieces[idx].setFromPeer(peerId);
+                Helper.writeLog(Peer.peerID + " received piece " + idx + " from " + peerId);
+
                 if (isDownloadComplete()) {
-                    Peer.remotePeerDetails.get(peerID).setCompletedFile(true);
+                    Peer.remotePeerDetails.get(peerId).setCompletedFile(true);
                     Helper.writeLog(Peer.peerID + " completed file download.");
                 }
             } catch (IOException e) {
                 Helper.writeLog("Error updating bitfield: " + e.getMessage());
-                e.printStackTrace();
             }
         }
     }
