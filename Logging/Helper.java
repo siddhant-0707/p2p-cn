@@ -38,4 +38,9 @@ public class Helper {
         logger.info(logMessage);
         System.out.println(LogFormatter.formatMessage(logMessage));
     }
+
+    public static void tag(String tag, String msg) {
+        writeLog(String.format("[%s] %s", tag, msg));
+    }
+
 }

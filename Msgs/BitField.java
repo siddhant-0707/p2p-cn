@@ -2,6 +2,7 @@ package Msgs;
 
 import Configs.SysConfig;
 import Logging.Helper;
+import Metadata.PeerMetadata;
 import Process.Peer;
 
 import java.io.File;
@@ -87,28 +88,47 @@ public class BitField {
         return -1;
     }
 
-    public void updateBitField(String peerId, FilePiece received) {
-        int idx = received.getPieceIndex();
-        if (!filePieces[idx].isPieceAvailable()) {
-            File dir  = new File(Peer.peerID);
-            File file = new File(dir, SysConfig.fileName);
-            try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
-                raf.seek((long) idx * SysConfig.pieceSize);
-                raf.write(received.getContent());
-
-                filePieces[idx].setPieceAvailable(true);
-                filePieces[idx].setFromPeer(peerId);
-                Helper.writeLog(Peer.peerID + " received piece " + idx + " from " + peerId);
-
-                if (isDownloadComplete()) {
-                    Peer.remotePeerDetails.get(peerId).setCompletedFile(true);
-                    Helper.writeLog(Peer.peerID + " completed file download.");
+    public synchronized void updateBitField(String fromPeer, FilePiece fp) {
+        int idx = fp.getPieceIndex();
+    
+        // 1) ignore duplicates
+        if (filePieces[idx].isPieceAvailable()) return;
+    
+        // 2) write the payload to our local file
+        try (RandomAccessFile raf = new RandomAccessFile(
+                new File(Peer.peerFolder, SysConfig.fileName), "rw")) {
+            raf.seek((long) idx * SysConfig.pieceSize);
+            raf.write(fp.getContent());  // writes exactly the bytes you received
+        } catch (IOException ioe) {
+            Helper.writeLog("Error writing piece " + idx + ": " + ioe.getMessage());
+            return;
+        }
+    
+        // 3) mark it present in our bitfield
+        filePieces[idx].setPieceAvailable(true);
+        filePieces[idx].setFromPeer(fromPeer);
+    
+        // 4) log the piece download
+        Helper.writeLog(String.format(
+            "Peer %s has downloaded the piece %d from %s. Now the number of pieces it has is %d",
+            Peer.peerID, idx, fromPeer, countAvailablePieces()));
+    
+        // 5) if that was the final piece, log completion and update PeerInfo.cfg
+        if (isDownloadComplete()) {
+            Helper.writeLog("Peer " + Peer.peerID + " has downloaded the complete file.");
+    
+            PeerMetadata me = Peer.remotePeerDetails.get(Peer.peerID);
+            if (me != null && !me.hasCompletedFile()) {
+                try {
+                    me.updatePeerMetadata(Peer.peerID, 1);  // may throw IOException
+                    me.setCompletedFile(true);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-            } catch (IOException e) {
-                Helper.writeLog("Error updating bitfield: " + e.getMessage());
             }
         }
     }
+
 
     public FilePiece[] getFilePieces() {
         return filePieces;
