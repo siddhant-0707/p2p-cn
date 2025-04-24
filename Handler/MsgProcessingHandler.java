@@ -53,15 +53,35 @@ public class MsgProcessingHandler implements Runnable {
 
                 /* finite-state dispatch */
                 switch (state) {
-                    case 2  -> processBitfieldHandshake(type, remoteId);
-                    case 3  -> processInterestedOrNot(type, remoteId);
-                    case 4  -> processFileRequest(msg, type, remoteId);
-                    case 8  -> acknowledgeBitfield(msg, type, remoteId);
-                    case 9  -> processChokeUnchoke(type, remoteId);
-                    case 11 -> processReceivedPiece(msg, type, remoteId);
-                    case 14 -> processHaveOrUnchoke(msg, type, remoteId);
-                    case 15 -> handlePeerFinished(remoteId);
+                    case 2:
+                        processBitfieldHandshake(type, remoteId);
+                        break;
+                    case 3:
+                        processInterestedOrNot(type, remoteId);
+                        break;
+                    case 4:
+                        processFileRequest(msg, type, remoteId);
+                        break;
+                    case 8:
+                        acknowledgeBitfield(msg, type, remoteId);
+                        break;
+                    case 9:
+                        processChokeUnchoke(type, remoteId);
+                        break;
+                    case 11:
+                        processReceivedPiece(msg, type, remoteId);
+                        break;
+                    case 14:
+                        processHaveOrUnchoke(msg, type, remoteId);
+                        break;
+                    case 15:
+                        handlePeerFinished(remoteId);
+                        break;
+                    default:
+                        // optionally handle unknown states
+                        break;
                 }
+                
             }
         }
     }
