@@ -44,10 +44,10 @@ public class Peer {
     public  static BitField bitFieldMessage;
 
     /* ---------- neighbour data structures ---------- */
-    public  static final Map<String,PeerMetadata> remotePeerDetails  = new ConcurrentHashMap<>();
-    public  static final Map<String,PeerMetadata> preferredNeighbours= new ConcurrentHashMap<>();
-    public  static final Map<String,PeerMetadata> optimisticUnchoked = new ConcurrentHashMap<>();
-    public  static final Map<String,Socket>       peerToSocketMap    = new ConcurrentHashMap<>();
+    public  static final Map<String,PeerMetadata> remotePeerDetails        = new ConcurrentHashMap<>();
+    public  static final Map<String,PeerMetadata> preferredNeighbours      = new ConcurrentHashMap<>();
+    public  static final Map<String,PeerMetadata> optimisticUnchoked       = new ConcurrentHashMap<>();
+    public  static final Map<String,Socket>       peerToSocketMap          = new ConcurrentHashMap<>();
 
     /* ---------- timers ---------- */
     private static Timer preferredNeighboursTimer;
@@ -82,25 +82,24 @@ public class Peer {
     /* ---------- configuration ---------- */
 
     private static void readConfiguration() throws IOException {
-        /* ---------- Common.cfg ---------- */
+        // Common.cfg
         Files.lines(Paths.get("Configs/Common.cfg")).forEach(line -> {
             String[] p = line.trim().split("\\s+");
             switch (p[0]) {
-                case "NumberOfPreferredNeighbors": SysConfig.preferredNeighbourCount     = Integer.parseInt(p[1]); break;
-                case "UnchokingInterval":          SysConfig.unchokingInterval          = Integer.parseInt(p[1]); break;
-                case "OptimisticUnchokingInterval":SysConfig.optimisticUnchokingInterval = Integer.parseInt(p[1]); break;
-                case "FileSize":                   SysConfig.fileSize                   = Integer.parseInt(p[1]); break;
-                case "FileName":                   SysConfig.fileName                   = p[1];                   break;
-                case "PieceSize":                  SysConfig.pieceSize                  = Integer.parseInt(p[1]); break;
+                case "NumberOfPreferredNeighbors": SysConfig.preferredNeighbourCount      = Integer.parseInt(p[1]); break;
+                case "UnchokingInterval":          SysConfig.unchokingInterval           = Integer.parseInt(p[1]); break;
+                case "OptimisticUnchokingInterval":SysConfig.optimisticUnchokingInterval  = Integer.parseInt(p[1]); break;
+                case "FileSize":                   SysConfig.fileSize                    = Integer.parseInt(p[1]); break;
+                case "FileName":                   SysConfig.fileName                    = p[1];                   break;
+                case "PieceSize":                  SysConfig.pieceSize                   = Integer.parseInt(p[1]); break;
             }
         });
 
-        /* ---------- PeerInfo.cfg ---------- */
+        // PeerInfo.cfg
         int idx = 0;
         for (String line : Files.readAllLines(Paths.get("Configs/PeerInfo.cfg"))) {
             String[] t = line.trim().split("\\s+");
-            remotePeerDetails.put(t[0],
-                    new PeerMetadata(t[0], t[1], t[2], Integer.parseInt(t[3]), idx++));
+            remotePeerDetails.put(t[0], new PeerMetadata(t[0], t[1], t[2], Integer.parseInt(t[3]), idx++));
         }
     }
 
@@ -108,8 +107,8 @@ public class Peer {
 
     private static void setCurrentPeerDetails() {
         PeerMetadata me = remotePeerDetails.get(peerID);
-        peerPort    = Integer.parseInt(me.getPortNumber());
-        peerIndex   = me.getPeerIndex();
+        peerPort   = Integer.parseInt(me.getPortNumber());
+        peerIndex  = me.getPeerIndex();
         isFirstPeer = me.hasCompletedFile();
         hasFile     = isFirstPeer;
     }
@@ -126,11 +125,11 @@ public class Peer {
     }
 
     private static void startNetworking() throws IOException {
-        /* ---------- act as a server ---------- */
+        // File server
         fileServingSocket = new ServerSocket(peerPort);
         fileServerExecutor.execute(new FileServerHandler(fileServingSocket, peerID));
 
-        /* ---------- connect to “previous” peers if we need pieces ---------- */
+        // If we don’t have the file, connect to earlier peers
         if (!isFirstPeer) {
             createPlaceholderFile();
             for (PeerMetadata pm : remotePeerDetails.values()) {
@@ -147,8 +146,7 @@ public class Peer {
     private static void createPlaceholderFile() throws IOException {
         File dir = new File(peerFolder);
         if (dir.mkdirs()) {
-            try (OutputStream os =
-                         new FileOutputStream(new File(dir, SysConfig.fileName))) {
+            try (OutputStream os = new FileOutputStream(new File(dir, SysConfig.fileName))) {
                 for (int i = 0; i < SysConfig.fileSize; i++) os.write(0);
             }
         }
@@ -157,11 +155,11 @@ public class Peer {
     /* ---------- neighbour timers ---------- */
 
     private static void scheduleNeighbourTasks() {
-        preferredNeighboursTimer = new Timer(true);
+        preferredNeighboursTimer = new Timer();
         preferredNeighboursTimer.schedule(
                 new PreferredNeighbors(), 0, SysConfig.unchokingInterval * 1000L);
 
-        optimisticUnchokeTimer   = new Timer(true);
+        optimisticUnchokeTimer = new Timer();
         optimisticUnchokeTimer.schedule(
                 new OptimisticallyUnchoke(), 0, SysConfig.optimisticUnchokingInterval * 1000L);
     }
@@ -169,9 +167,7 @@ public class Peer {
     /* ---------- completion / shutdown ---------- */
 
     private static void waitUntilComplete() throws InterruptedException {
-        while (!allPeersComplete()) {
-            Thread.sleep(2000);
-        }
+        while (!allPeersComplete()) Thread.sleep(2000);
 
         writeLog("All peers have finished downloading.");
         preferredNeighboursTimer.cancel();
@@ -192,7 +188,7 @@ public class Peer {
         }
     }
 
-    /* ---------- helper used by OptimisticallyUnchoke ---------- */
+    /* ---------- helper for OptimisticallyUnChokedNeighbors ---------- */
 
     public synchronized static void updateOtherPeerMetadata() {
         try {
