@@ -63,7 +63,8 @@ public class StartRemotePeers {
 
                 // remote command: cd into working dir, then run our Peer
                 String cmd = String.format(
-                    "cd %s; java Process.Peer %s",
+                    "cd %s; nohup java -cp bin Process.Peer %s "
+                    + "> peer_%s.out 2>&1 &",
                     REMOTE_DIR, pm.getPeerId()
                 );
                 ChannelExec channel = (ChannelExec) session.openChannel("exec");
