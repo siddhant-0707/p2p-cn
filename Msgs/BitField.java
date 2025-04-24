@@ -43,8 +43,17 @@ public class BitField {
 
     public static BitField decodeBitField(byte[] data) {
         BitField bf = new BitField();
-        for (int i = 0; i < bf.totalPieces; i++) {
-            boolean available = (data[i / 8] & (1 << (7 - (i % 8)))) != 0;
+    
+        // 1) nothing to decode → return an “all-zero” bit-field
+        if (data == null || data.length == 0) {
+            return bf;
+        }
+    
+        // 2) decode only as many bits as we really have input for
+        int bitsToDecode = Math.min(bf.totalPieces, data.length * 8);
+    
+        for (int i = 0; i < bitsToDecode; i++) {
+            boolean available = ((data[i / 8] & 0xFF) & (1 << (7 - (i % 8)))) != 0;
             bf.filePieces[i].setPieceAvailable(available);
         }
         return bf;

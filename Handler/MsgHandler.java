@@ -59,25 +59,52 @@ public class MsgHandler implements Runnable {
         }
     }
 
-    private void exchangeBitfield() throws Exception {
-        // after handshake, send local bitfield
-        var bitfieldBytes = Peer.bitFieldMessage.encodeBitField();
-        Msg bfMsg = new Msg(Constants.BITFIELD, bitfieldBytes);
-        outputStream.write(Msg.serializeMessage(bfMsg));
-        Peer.remotePeerDetails.get(remotePeerId).setPeerState(8);
+    public void exchangeBitfield() throws Exception {
+        byte[] hsBuf = new byte[Constants.HANDSHAKE_MESSAGE_LENGTH];
+    
+        // 1) Read exactly one handshake from the peer
+        while (inputStream.read(hsBuf) > 0) {
+            Handshake remoteHs = Handshake.deserialize(hsBuf);
+            if (remoteHs.getHeader().equals(Constants.HANDSHAKE_HEADER)) {
+                remotePeerId = remoteHs.getPeerID();
+                Helper.writeLog(peerId + " established connection to " + remotePeerId);
+                Helper.writeLog(peerId + " received HANDSHAKE from " + remotePeerId);
+                break;
+            }
+        }
+    
+        // 2) Send our bitfield exactly once
+        byte[] bitfieldPayload = Peer.bitFieldMessage.encodeBitField();
+        Msg bitfieldMsg = new Msg(Constants.BITFIELD, bitfieldPayload);
+        outputStream.write(Msg.serializeMessage(bitfieldMsg));
+        Helper.writeLog(peerId + " sent BITFIELD to " + remotePeerId);
+    
+        // 3) Update remote‐peer state to “bitfield exchanged” (state 3)
+        Peer.remotePeerDetails.get(remotePeerId).setPeerState(3);
     }
-
+    
     private void processPassiveConnection() throws Exception {
+        // 1) Read the incoming handshake
         receiveHandshake();
+    
+        // 2) Send our handshake reply
         if (sendHandshake()) {
             Helper.writeLog(peerId + " handshake reply sent.");
         } else {
             Helper.writeLog(peerId + " handshake reply failed.");
             System.exit(-1);
         }
-        // send bitfield too
-        exchangeBitfield();
+    
+        // 3) Now immediately send our bitfield
+        byte[] bitfieldPayload = Peer.bitFieldMessage.encodeBitField();
+        Msg bitfieldMsg = new Msg(Constants.BITFIELD, bitfieldPayload);
+        outputStream.write(Msg.serializeMessage(bitfieldMsg));
+        Helper.writeLog(peerId + " sent BITFIELD to " + remotePeerId);
+    
+        // 4) Advance remote‐peer state to “bitfield exchanged” (state 3)
+        Peer.remotePeerDetails.get(remotePeerId).setPeerState(3);
     }
+    
 
     private void processMessages() throws IOException {
         byte[] lenBuf = new byte[Constants.MESSAGE_LENGTH];
