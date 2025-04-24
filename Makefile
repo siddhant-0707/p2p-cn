@@ -6,7 +6,7 @@ JAR = lib/jsch-0.1.55.jar
 CP  = .:$(JAR)
 
 all: 
-    javac -d bin -cp $(CP) $(shell find src -name "*.java")
+    javac -d bin -cp $(CP) $(shell find . -name "*.java")
 
 run:
     java  -cp $(CP):bin Process.StartRemote

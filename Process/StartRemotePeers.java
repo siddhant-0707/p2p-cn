@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 public class StartRemotePeers {
     private static final String PEER_INFO_PATH = "Configs/PeerInfo.cfg";
     private static final String WORKING_DIR    = System.getProperty("user.dir");
+    private static final String REMOTE_DIR = "~/p2p-cn";
 
     private final Vector<PeerMetadata> peerInfo = new Vector<>();
 
@@ -63,7 +64,7 @@ public class StartRemotePeers {
                 // remote command: cd into working dir, then run our Peer
                 String cmd = String.format(
                     "cd %s; java Process.Peer %s",
-                    WORKING_DIR, pm.getPeerId()
+                    REMOTE_DIR, pm.getPeerId()
                 );
                 ChannelExec channel = (ChannelExec) session.openChannel("exec");
                 channel.setCommand(cmd);
